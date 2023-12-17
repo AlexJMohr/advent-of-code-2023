@@ -59,11 +59,11 @@ void print_grid(grid grid, int reflected_row_idx, int reflected_col_idx)
         if (reflected_row_idx >= 0)
         {
             if (r == reflected_row_idx)
-                std::cout << "v";
+                std::cout << " v";
             else if (r == reflected_row_idx + 1)
-                std::cout << "^";
+                std::cout << " ^";
             else
-                std::cout << " ";
+                std::cout << "  ";
         }
         std::cout << std::format("{:3}", r + 1);
         std::cout << "\n";
@@ -86,11 +86,14 @@ void print_grid(grid grid, int reflected_row_idx, int reflected_col_idx)
     std::cout << "\n";
 }
 
-int find_reflected_row(grid const &grid)
+int find_reflected_row(grid const &grid, int prev_row_idx = -1)
 {
     // start at the bottom row and work our way up
     for (int r = grid.size() - 2; r >= 0; --r)
     {
+        if (prev_row_idx >= 0 && r == prev_row_idx)
+            continue;
+
         bool reflected = true;
         for (int i = r, j = r + 1; i >= 0 && j < grid.size(); --i, ++j)
         {
@@ -103,6 +106,28 @@ int find_reflected_row(grid const &grid)
         if (reflected)
             return r;
     }
+    return -1;
+}
+
+int find_unsmudged_reflected_row(grid const &g)
+{
+    // to make sure we don't find the same reflection twice, we keep track of the
+    // previous reflection and skip it
+    int prev_row_idx = find_reflected_row(g);
+
+    for (int r = 0; r < g.size(); ++r)
+    {
+        for (int c = 0; c < g[r].length(); ++c)
+        {
+            grid grid_copy = g;
+            grid_copy[r][c] = (grid_copy[r][c] == '#' ? '.' : '#');
+
+            int reflected_row_idx = find_reflected_row(grid_copy, prev_row_idx);
+            if (reflected_row_idx >= 0)
+                return reflected_row_idx;
+        }
+    }
+
     return -1;
 }
 
@@ -126,16 +151,10 @@ void part1(const char *filename)
             if (reflected_col_idx >= 0)
                 score = reflected_col_idx + 1;
         }
-        print_grid(grid, reflected_row_idx, reflected_col_idx);
-        // std::cout << "score: " << score << "\n";
         part1 += score;
 
-        if (reflected_row_idx < 0 && reflected_col_idx < 0)
-        {
-            std::cout << "PANIC! No reflection found!\n";
-            return;
-        }
-        std::cout << "\n";
+        // print_grid(grid, reflected_row_idx, reflected_col_idx);
+        // std::cout << "score: " << score << "\n\n";
     }
 
     std::cout << "part 1: " << part1 << std::endl; // 36015
@@ -143,9 +162,37 @@ void part1(const char *filename)
 
 void part2(const char *filename)
 {
-    parse_file(filename);
-    int64_t part2 = 0;
-    std::cout << "part 2: " << part2 << std::endl;
+    auto grids = parse_file(filename);
+
+    int part2 = 0;
+    for (auto grid : grids)
+    {
+        int score = 0;
+        int reflected_row_idx = find_unsmudged_reflected_row(grid);
+        int reflected_col_idx = -1;
+        if (reflected_row_idx >= 0)
+        {
+            score = (reflected_row_idx + 1) * 100; // row numbers start at 1
+        }
+        else
+        {
+            reflected_col_idx = find_unsmudged_reflected_row(transpose(grid));
+            if (reflected_col_idx >= 0)
+                score = reflected_col_idx + 1;
+        }
+        part2 += score;
+
+        // print_grid(grid, reflected_row_idx, reflected_col_idx);
+        // std::cout << "score: " << score << "\n\n";
+
+        if (reflected_row_idx < 0 && reflected_col_idx < 0)
+        {
+            std::cout << "PANIC! No reflection found!\n";
+            return;
+        }
+    }
+
+    std::cout << "part 2: " << part2 << std::endl; // 35335
 }
 
 int main(int argc, char *argv[])
@@ -157,7 +204,7 @@ int main(int argc, char *argv[])
     }
 
     part1(argv[1]);
-    // part2(argv[1]);
+    part2(argv[1]);
 
     return 0;
 }
