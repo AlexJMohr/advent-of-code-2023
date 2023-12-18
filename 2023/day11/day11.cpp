@@ -82,7 +82,7 @@ int64_t get_total_distance(std::vector<coord> const &galaxy_positions, std::vect
     auto galaxy_pairs = get_galaxy_pairs(galaxy_positions);
 
     int64_t total_distance = 0;
-    for (const auto pair : galaxy_pairs)
+    for (const auto &pair : galaxy_pairs)
     {
         auto g1 = pair.first;
         auto g2 = pair.second;
